@@ -1,0 +1,6 @@
+@DNB_SERVER_HostAddress = http://localhost:5197
+
+GET {{DNB_SERVER_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
