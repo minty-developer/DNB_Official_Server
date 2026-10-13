@@ -19,5 +19,10 @@ public static class Variable {
     // 헤더를 검사할 때 확인할 Value
     public static string RequireValue { get; } = "DNB Electron Application";
 
+    // JWT
+    public static string JWTSecritKey { get; } = "DNB_Super_Secret_Key_2026_Minseung";
+    public static string JWTIssuer { get; } = "dnb-server";
+    public static string JWTAudience { get; } = "dnb-client";
+
     public static int RateLimitPerMinute { get; } = 60;
 }

@@ -3,10 +3,37 @@ using System.Text.Json.Serialization;
 using DNB_SERVER.Program;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 
 // ================================== Build ==================================
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Cache 사용 등록
+builder.Services.AddMemoryCache();
+
+// DB 등록
+var dbType = builder.Configuration["DatabaseType"] ?? "Sqlite";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<DnbDbContext>(options =>
+{
+    switch (dbType.ToLower())
+    {
+        case "mysql":
+            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+            break;
+            
+        case "postgre":
+        case "postgresql":
+            options.UseNpgsql(connectionString);
+            break;
+            
+        case "sqlite":
+        default:
+            options.UseSqlite(connectionString);
+            break;
+    }
+});
 
 // API 컨트롤러 서비스 등록
 builder.Services.AddControllers();
@@ -47,9 +74,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = "dnb-server", // 토큰 발행자
             ValidAudience = "dnb-client", // 토큰 사용자 (Electron 앱 등)
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("DNB_Super_Secret_Key_2026_Minseung"))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Variable.JWTSecritKey))
         };
     });
+
+// JWT 인증 매니져 등록
+builder.Services.AddScoped<JwtTokenManager>();
 
 // Role 활성화
 builder.Services.AddAuthorization();
@@ -80,7 +110,7 @@ if(Variable.CheckRateLimit) app.UseMiddleware<RateLimitMiddleware>();
 // Origin Check 미들웨어 사용 설정
 if(Variable.CheckRequireBy) app.UseMiddleware<HttpOriginCheckMiddleware>();
 
-// 내부 Error Logging 미들웨어 설정
+// 내부 Error Logging 미들웨어 사용 설정
 app.UseMiddleware<ServerErrorLoggingMiddleware>();
 
 // Http Error Logging 미들웨어 사용 설정
